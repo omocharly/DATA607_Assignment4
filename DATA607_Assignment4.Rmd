@@ -1,0 +1,140 @@
+---
+title: "Tidying and Transforming Vaccination Data"
+date: "9/26/2021"
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+---
+
+
+### Title: CUNY SPS MDS Data607_Assigment4"
+### Author: Charles Ugiagbe
+### Date: "9/26/2021"
+
+###   load the required Packages
+
+```{r}
+library(tidyverse)
+library(stringr)
+```
+
+###   Load the Raw Vaccination data
+
+```{r}
+url <- "https://raw.githubusercontent.com/omocharly/DATA606_Assignment4/main/israeli_vaccination_data_analysis_start.csv"
+rawdata <- read.csv(url, header = TRUE)
+rawdata
+```
+##        Raname the Data Column
+
+```{r}
+vac_data = rawdata %>% rename(
+      AgeGroup = Age,
+      NotVax = Population..,
+      Vax = X,
+      Sev.NotVaxPr100k = Severe.Cases,
+      Sev.VaxPr100k = X.1,
+      Efficacy.Sev=Efficacy)
+```
+
+
+##    Tidy and Transform the Data
+
+```{r}
+vac_data=slice(vac_data,2:5)
+PcNotVax=vac_data[[2]][c(2,4)]
+PcNotVax=as.numeric(str_remove_all(PcNotVax,"%"))
+PcVax=vac_data[[3]][c(2,4)]
+PcVax=as.numeric(str_remove_all(PcVax,"%"))
+vac_data=slice(vac_data,c(1,3))
+vac_data$PcNotVax=PcNotVax
+vac_data$PcVax=PcVax
+vac_data$Sev.NotVaxPr100k=as.numeric(vac_data$Sev.NotVaxPr100k)
+vac_data$Sev.VaxPr100k=as.numeric(vac_data$Sev.VaxPr100k)
+vac_data=vac_data[,c(1,2,7,3,8,4,5,6)]
+vac_data$NotVax=str_remove_all(vac_data$NotVax,",")
+vac_data$NotVax=as.integer(vac_data$NotVax)
+vac_data$Vax=str_remove_all(vac_data$Vax,",")
+vac_data$Vax=as.integer(vac_data$Vax)
+vac_data
+```
+
+##    Background Knowledge about isreal Polulation and Vaccine Requirement:
+
+Israel’s total population is about 9216900 according to WorldBank data.
+
+Eligible to receive vaccine in Israel: From february 2021, only those who are 16 years and older could get covid vaccinated in Israel, but by August 2021, the covid vaccines have been made available to those age 12 and older.
+
+To be fully vaccinated in Israel means that 14 days have elapsed after completing the series (2 doses) of either the Pfizer or Moderna vaccines as those are the only covid-19 vaccines currently approved in Israel.
+
+
+##        Question 1:
+
+Do you have enough information to calculate the total population? What does this total population represent?
+
+##        Answer 1:
+
+**There is enough information to calculate the total Population.**
+
+From the table, it can be clearly seen that the 96.3% of Agegroup less than 50 are the addition of Non-vaccinated(1116834) and the vaccinated(3501118); while 98.3% of the greater than 50 population is also the addition of the non-vaccinatied and the vaccinated in that categories.
+
+96.3% Agegroup(<50) = 1116834 + 3501118 = 4,617,952
+
+98.3% Agegroup(<50) = 186078 + 2133516 = 2,319,594
+
+Total population for Agegroup(<50)
+
+ 4,617,952/96.3 * 100 = 4,795,381
+ 
+ Total Population for Agegroup(>50)
+ 
+ 2,319,594/98.3 * 100 = 2,359,709
+
+ Total Population = 4,795,381 + 2,359,709 = 7,155,090.
+ 
+```{r}
+vac_data = vac_data %>% mutate(total.pop = (NotVax+Vax) / ((PcNotVax+PcVax)/100))
+vac_data %>% summarize(total = sum(total.pop))
+```
+ 
+ 
+ 
+This total population represent the population eligible for vaccine in Isreal. This population include the Vaccinated, Unvaccinated and the partially vaccinated that is not captured in the data.
+Since, the population of Isreal is about 9.21 million, there are over 2 million people that are outside this data which i believe are minors that are not elligible for vaccines.
+
+
+##        Question 2:
+
+Calculate the Efficacy vs. Disease; Explain your results.
+
+##        Answer 2:
+
+EfficacyVSev = (1- V/N), 
+
+V = rate of infection per 100k for fully vaccinated.
+
+N = rate of infection per 100k for unvaccinated.
+
+rate Per 100k for 43 = 3.9; rate per 100k for 11 = 0.3
+
+rate Per 100k for 171 = 91.9; rate per 100k for 290 = 13.6
+
+(<50  Agegroup Efficacy) = 1 - 0.3/3.9 = 91.9%
+
+(>50 Agegroup EfficacyvSev) = 1 - 13.6/91.9 = 85.2%
+
+**Explanation**
+
+The Efficacy vs severe result shows that the vaccine is more effective in the less than 50 Age-group. The unvaccinated in this agegroup are more likely to have severe cases if infected. On the contrary, for the Age-group greater than 50, the vaccine is less effective
+
+
+
+##        Question 3:
+
+From your calculation of efficacy vs. disease, are you able to compare the rate of severe cases in unvaccinated individuals to that in vaccinated individuals?
+
+##        Answer 3:
+
+I can compare the rate of severe cases in unvaccinated individuals to vaccinated individuals. The Efficacy vs. Severe basically represents the percent reduction in the severity of infection in the vaccinated group relative to the unvaccinated. From the severe rate, we can see that the unvaccinated are more likely to be hospitalized if infected.
